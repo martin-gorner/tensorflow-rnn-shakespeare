@@ -1,0 +1,94 @@
+# Sample code for Tensorflow presentation: [Tensorflow and deep learning - without a PhD, Part 2](https://goo.gl/jrd7AR)
+
+## Usage:
+
+- Train a language model on the complete works of William Shakespeare. You can also train on Tensorflow Python code. See comments in the file.
+```
+> python3 rnn_train.py
+```
+
+
+- Use a trained snapshot to generate a new "Shakespeare" play. You can also generate new "Tensorflow Python" code. See comments in the file.
+```
+> python3 rnn_play.py
+``` 
+   
+   Snapshot files can be downloaded from here:  
+   
+   [Fully trained](https://drive.google.com/file/d/0B5njS_LX6IsDQ1laeDJ6dktSb3M/view?usp=sharing),
+   on Shakespeare or Tensorflow Python source.   
+   
+   [Partially trained](https://drive.google.com/file/d/0B5njS_LX6IsDc2Y0X1VWc1pVTE0/view?usp=sharing),
+   to see how they make progress in training.
+
+
+- Unit tests can be run with 'python3 -m unittest tests.py'
+
+
+- The file **rnn_play_stateistuple.py** implements the same model using 
+the state_is_tuple=True option in tf.nn.rnn_cell.MultiRNNCell (default).
+Training is supposedly faster (by ~10%) but handling the state as
+a tuple is a bit more cumbersome.
+ 
+## FAQ
+
+### 1) Why not apply a softmax activation function to the outputs of the LSTM directly?
+That is because you need to go from CELLSIZE to ALPHASIZE. This dimension
+reduction of dimensions is best performed by a learned layer.
+
+###  Why does it not work with just one cell? The RNN cell state should still enable state transitions, even without unrolling ?
+Yes, a cell is a state machine and can represent state transitions like
+the fact that an there is a pending open parenthesis and that it will need
+to be closed at some point. The problem is to make the network learn those
+transitions. The learning algorithm only modifies weights and biases. The input
+state of the cell cannot be modified by it: that is a big problem if the wrong
+predictions returned by the cell are caused by a bad input state. The solution
+is to unroll the cell into a sequence of replicas. Now the learning algorithm
+can change the weights and biases to influence the state flowing from one cell
+in the sequence to the next (with the exception of the input state of the first
+cell)
+
+###  3) OK, so this trained model will only be able to generate state transitions over a distance equal to the number of cells in an unrolled sequence, right ?
+No, it will be able to *learn* state transitions over that distance only.
+However, when we will use the model to generate text, it will be able to produce
+correct state transitions over longer distances. For example, if the unrolling
+size is 30, the model will be able to correctly open and close parentheses over
+distances of 100 characters or more. But you will have to teach it this trick
+using examples of 30 or less characters.
+
+###  4) So, now that I have unrolled the RNN cell, state passing is taken care of. I just have to call my train_step in a loop right ?
+Not quite, you sill need to save the last state of the unrolled sequence of
+cells, and feed it as the input state for the next minibatch in the traing loop.
+
+### 5) What is the proper way of batching training sequences ?
+A: All the character sequences in the first batch, must continue in the second
+batch and so on, because all the output states produced by the sequences in the
+first batch will be used as input states for the sequences of the second batch.
+txt.rnn_minibatch_sequencer is a utility provided for this purpose.
+It even continues sequences from one epoch to the next (apart from one sequence
+in the last batch of the epoch: the one where the training text finishes. There
+is not way to continue that one. So there is no need to reset the state between
+epochs. The training will see at most one incoherent state per epoch, which is
+negligible.
+
+### 6) Any other gotcha's ?
+When saving and restoring the model, you must name your placeholders and name
+your nodes if you want to target them by name in the restored version (when you
+do a session.run([-nodes-], feed_dict={-placeholders}) using the restored model.
+
+### 7) This is not serious. I want more math!
+If you want to go deeper in the math, the one piece you are missing is the explanation
+of retropropagation, i.e. the algorithm used to compute gradients across multiple layers
+of neurons. Google it! It's useful if you want to re-implement gradient descent on your
+own, or understand how it is done. And it's not that hard. If the explanations do not make
+sense to you, it's probably because the explanations are bad. Google more :-)
+
+The second piece of math I would advise you to read on is the math behind "sampled softmax'
+in RNNs. You need to write down the softmax equations, the loss functions, derive it, and
+then try to devise cheap ways of approximating this gradient. This is an [active area of
+research](http://sebastianruder.com/word-embeddings-softmax/index.html).
+
+The third interesting piece of mathematics is to understand why LSTMs converge while RNNs built with basic
+RNN blocks do not.
+
+Good mathematical hunting!﻿
