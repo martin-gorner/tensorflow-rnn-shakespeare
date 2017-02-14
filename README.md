@@ -19,7 +19,7 @@ Training is supposedly faster (by ~10%) but handling the state as
 a tuple is a bit more cumbersome.
 
 ```
-tensorboard --logdir=log
+> tensorboard --logdir=log
 ```
 The training script **rnn_train.py** is set up to save training and validation
 data as "Tensorboard sumaries" in the "log" folder. They can be visualised with Tensorboard.
@@ -44,7 +44,7 @@ on Shakespeare or Tensorflow Python source.
 to see how they make progress in training.
 
 ```
-python3 -m unittest tests.py
+> python3 -m unittest tests.py
 ```
 Unit tests can be run with the command above.
  
