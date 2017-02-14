@@ -1,34 +1,39 @@
-# Sample code for Tensorflow presentation: [Tensorflow and deep learning - without a PhD, Part 2](https://goo.gl/jrd7AR)
+# Code for the Recurrent Neural Network in the presentation "Tensorflow and deep learning - without a PhD, Part 2"
+
+[Video](https://t.co/cIePWmdxVE)
+[Slides](https://goo.gl/jrd7AR)
 
 ## Usage:
 
-- Train a language model on the complete works of William Shakespeare. You can also train on Tensorflow Python code. See comments in the file.
 ```
 > python3 rnn_train.py
 ```
+The script **rnn_train.py** trains a language model on the complete works of William Shakespeare.
+You can also train on Tensorflow Python code. See comments in the file.
 
-
-- Use a trained snapshot to generate a new "Shakespeare" play. You can also generate new "Tensorflow Python" code. See comments in the file.
+The file **rnn_train_stateistuple.py** implements the same model using 
+the state_is_tuple=True option in tf.nn.rnn_cell.MultiRNNCell (default).
+Training is supposedly faster (by ~10%) but handling the state as
+a tuple is a bit more cumbersome.
 ```
 > python3 rnn_play.py
 ``` 
    
-   Snapshot files can be downloaded from here:  
+The script **rnn_play.py** uses a trained snapshot to generate a new "Shakespeare" play.  
+You can also generate new "Tensorflow Python" code. See comments in the file.
+
+Snapshot files can be downloaded from here:  
    
-   [Fully trained](https://drive.google.com/file/d/0B5njS_LX6IsDQ1laeDJ6dktSb3M/view?usp=sharing),
-   on Shakespeare or Tensorflow Python source.   
+[Fully trained](https://drive.google.com/file/d/0B5njS_LX6IsDQ1laeDJ6dktSb3M/view?usp=sharing)
+on Shakespeare or Tensorflow Python source.   
    
-   [Partially trained](https://drive.google.com/file/d/0B5njS_LX6IsDc2Y0X1VWc1pVTE0/view?usp=sharing),
-   to see how they make progress in training.
+[Partially trained](https://drive.google.com/file/d/0B5njS_LX6IsDc2Y0X1VWc1pVTE0/view?usp=sharing)
+to see how they make progress in training.
 
-
-- Unit tests can be run with 'python3 -m unittest tests.py'
-
-
-- The file **rnn_play_stateistuple.py** implements the same model using 
-the state_is_tuple=True option in tf.nn.rnn_cell.MultiRNNCell (default).
-Training is supposedly faster (by ~10%) but handling the state as
-a tuple is a bit more cumbersome.
+```
+python3 -m unittest tests.py
+```
+Unit tests can be run with the command above.
  
 ## FAQ
 
