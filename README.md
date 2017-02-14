@@ -1,7 +1,9 @@
 # Code for the Recurrent Neural Network in the presentation "Tensorflow and deep learning - without a PhD, Part 2"
 
-[Video](https://t.co/cIePWmdxVE)
-[Slides](https://goo.gl/jrd7AR)
+The presentation itself is available here:
+
+* [Video](https://t.co/cIePWmdxVE)
+* [Slides](https://goo.gl/jrd7AR)
 
 ## Usage:
 
@@ -38,8 +40,8 @@ Unit tests can be run with the command above.
 ## FAQ
 
 ### 1) Why not apply a softmax activation function to the outputs of the LSTM directly?
-That is because you need to go from CELLSIZE to ALPHASIZE. This dimension
-reduction of dimensions is best performed by a learned layer.
+That is because you need to convert vectors of size CELLSIZE to size ALPHASIZE.
+The reduction of dimensions is best performed by a learned layer.
 
 ###  Why does it not work with just one cell? The RNN cell state should still enable state transitions, even without unrolling ?
 Yes, a cell is a state machine and can represent state transitions like
@@ -66,20 +68,20 @@ Not quite, you sill need to save the last state of the unrolled sequence of
 cells, and feed it as the input state for the next minibatch in the traing loop.
 
 ### 5) What is the proper way of batching training sequences ?
-A: All the character sequences in the first batch, must continue in the second
+All the character sequences in the first batch, must continue in the second
 batch and so on, because all the output states produced by the sequences in the
 first batch will be used as input states for the sequences of the second batch.
 txt.rnn_minibatch_sequencer is a utility provided for this purpose.
 It even continues sequences from one epoch to the next (apart from one sequence
 in the last batch of the epoch: the one where the training text finishes. There
-is not way to continue that one. So there is no need to reset the state between
+is no way to continue that one.) So there is no need to reset the state between
 epochs. The training will see at most one incoherent state per epoch, which is
 negligible.
 
 ### 6) Any other gotcha's ?
 When saving and restoring the model, you must name your placeholders and name
 your nodes if you want to target them by name in the restored version (when you
-do a session.run([-nodes-], feed_dict={-placeholders}) using the restored model.
+run a session.run([-nodes-], feed_dict={-placeholders-}) using the restored model.
 
 ### 7) This is not serious. I want more math!
 If you want to go deeper in the math, the one piece you are missing is the explanation
@@ -88,7 +90,7 @@ of neurons. Google it! It's useful if you want to re-implement gradient descent 
 own, or understand how it is done. And it's not that hard. If the explanations do not make
 sense to you, it's probably because the explanations are bad. Google more :-)
 
-The second piece of math I would advise you to read on is the math behind "sampled softmax'
+The second piece of math I would advise you to read on is the math behind "sampled softmax"
 in RNNs. You need to write down the softmax equations, the loss functions, derive it, and
 then try to devise cheap ways of approximating this gradient. This is an [active area of
 research](http://sebastianruder.com/word-embeddings-softmax/index.html).
