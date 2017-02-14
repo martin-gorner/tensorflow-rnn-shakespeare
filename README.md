@@ -26,6 +26,7 @@ data as "Tensorboard sumaries" in the "log" folder. They can be visualised with 
 In the screenshot below, you can see the RNN being trained on 6 epochs of Shakespeare.
 The training and valisation curves stay close together which means that overfitting is not a major issue here.
  You can try to add some dropout but it will not improve the situation much becasue it is already quite good.
+ 
 ![Image](https://martin-gorner.github.io/tensorflow-rnn-shakespeare/tensorboard_screenshot.png)
 ```
 > python3 rnn_play.py
@@ -109,3 +110,53 @@ The third interesting piece of mathematics is to understand why LSTMs converge w
 RNN blocks do not.
 
 Good mathematical hunting!﻿
+
+### 8) Show us some generated Shakespeare
+```
+         TITUS ANDRONICUS
+
+
+ACT I
+ 
+SCENE III	An ante-chamber. The COUNT's palace.
+ 
+[Enter CLEOMENES, with the Lord SAY]
+ 
+Chamberlain
+    Let me see your worshing in my hands.
+ 
+LUCETTA
+    I am a sign of me, and sorrow sounds it.
+ 
+[Enter CAPULET and LADY MACBETH]
+ 
+What manner of mine is mad, and soon arise?
+ 
+JULIA
+    What shall by these things were a secret fool,
+    That still shall see me with the best and force?
+ 
+Second Watchman
+    Ay, but we see them not at home: the strong and fair of thee,
+    The seasons are as safe as the time will be a soul,
+    That works out of this fearful sore of feather
+    To tell her with a storm of something storms
+    That have some men of man is now the subject.
+    What says the story, well say we have said to thee,
+    That shall she not, though that the way of hearts,
+    We have seen his service that we may be sad.
+ 
+[Retains his house]
+ADRIANA What says my lord the Duke of Burgons of Tyre?
+ 
+DOMITIUS ENOBARBUS
+    But, sir, you shall have such a sweet air from the state,
+    There is not so much as you see the store,
+    As if the base should be so foul as you.
+ 
+DOMITIUS ENOY
+    If I do now, if you were not to seek to say,
+    That you may be a soldier's father for the field.
+ 
+[Exit]
+ ```
