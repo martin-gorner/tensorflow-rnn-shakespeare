@@ -17,7 +17,7 @@ import tensorflow as tf
 import numpy as np
 import my_txtutils
 
-# these mush match what was saved !
+# these must match what was saved !
 ALPHASIZE = my_txtutils.ALPHASIZE
 NLAYERS = 3
 INTERNALSIZE = 512
