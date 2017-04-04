@@ -25,7 +25,7 @@ The training script **rnn_train.py** is set up to save training and validation
 data as "Tensorboard sumaries" in the "log" folder. They can be visualised with Tensorboard.
 In the screenshot below, you can see the RNN being trained on 6 epochs of Shakespeare.
 The training and valisation curves stay close together which means that overfitting is not a major issue here.
- You can try to add some dropout but it will not improve the situation much becasue it is already quite good.
+ You can try to add some dropout but it will not improve the situation much because it is already quite good.
  
 ![Image](https://martin-gorner.github.io/tensorflow-rnn-shakespeare/tensorboard_screenshot.png)
 ```
