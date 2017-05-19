@@ -73,10 +73,36 @@ Hin = tf.placeholder(tf.float32, [None, INTERNALSIZE*NLAYERS], name='Hin')  # [ 
 # using a NLAYERS=3 layers of GRU cells, unrolled SEQLEN=30 times
 # dynamic_rnn infers SEQLEN from the size of the inputs Xo
 
-onecell = rnn.GRUCell(INTERNALSIZE)
-dropcell = rnn.DropoutWrapper(onecell, input_keep_prob=pkeep)
-multicell = rnn.MultiRNNCell([dropcell]*NLAYERS, state_is_tuple=False)
-multicell = rnn.DropoutWrapper(multicell, output_keep_prob=pkeep)
+# How to properly apply dropout in RNNs is described
+# here: https://arxiv.org/pdf/1409.2329.pdf
+# and further developed here: https://arxiv.org/pdf/1512.05287.pdf
+# Dropout is always added in RNNs to inputs in all RNN layers as well as the output of the last layer,
+# which actually serves as the input dropout of the softmax layer so there is no need to add that explicitly.
+# The first article says that dropout should be applied to RNN inputs+output but not states. In this approach,
+# a random dropout mask is recomputed at every step of the unrolled sequence.
+# The second article says that dropout should be applied to RNN inputs+output as well as states,
+# using the same dropout mask for all the steps of the unrolled sequence.
+# In one dense neural network layer, applying dropout to outputs is equivalent to dropping columns in the weights
+# matrix W, while applying dropout to inputs is equivalent to dropping lines in W. It has the same effect in the end.
+
+cells = [rnn.GRUCell(INTERNALSIZE) for _ in range(NLAYERS)]
+multicell = rnn.MultiRNNCell(cells, state_is_tuple=False)
+
+#dropcells  = [rnn.DropoutWrapper(cells[0],  input_keep_prob=pkeep, output_keep_prob=1.0,   state_keep_prob=pkeep, variational_recurrent=True, input_size=ALPHASIZE, dtype=tf.float32)]
+#dropcells += [rnn.DropoutWrapper(cell,      input_keep_prob=pkeep, output_keep_prob=1.0,   state_keep_prob=pkeep, variational_recurrent=True, input_size=INTERNALSIZE, dtype=tf.float32) for cell in cells[1:-1]]
+#dropcells += [rnn.DropoutWrapper(cells[-1], input_keep_prob=pkeep, output_keep_prob=pkeep, state_keep_prob=pkeep, variational_recurrent=True, input_size=INTERNALSIZE, dtype=tf.float32)]
+#dropcells  = [rnn.DropoutWrapper(cells[0],  input_keep_prob=pkeep)]
+#dropcells += [rnn.DropoutWrapper(cell,      input_keep_prob=pkeep) for cell in cells[1:-1]]
+#dropcells += [rnn.DropoutWrapper(cells[-1], input_keep_prob=pkeep, output_keep_prob=pkeep)]
+#multicell = rnn.MultiRNNCell(dropcells, state_is_tuple=False)
+
+
+#cells = [rnn.GRUCell(INTERNALSIZE) for _ in range(NLAYERS)]
+#dropcells = [rnn.DropoutWrapper(cells[0], input_keep_prob=pkeep, state_keep_prob=pkeep, variational_recurrent=True, input_size=ALPHASIZE, dtype=tf.float32)]
+#dropcells += [rnn.DropoutWrapper(cell, input_keep_prob=pkeep, state_keep_prob=pkeep, variational_recurrent=True, input_size=INTERNALSIZE, dtype=tf.float32) for cell in cells[1:]]
+#multicell = rnn.MultiRNNCell(dropcells, state_is_tuple=False)
+#multicell = rnn.DropoutWrapper(multicell, output_keep_prob=pkeep, state_keep_prob=pkeep, variational_recurrent=True, input_size=ALPHASIZE, dtype=tf.float32)
+
 Yr, H = tf.nn.dynamic_rnn(multicell, Xo, dtype=tf.float32, initial_state=Hin)
 # Yr: [ BATCHSIZE, SEQLEN, INTERNALSIZE ]
 # H:  [ BATCHSIZE, INTERNALSIZE*NLAYERS ] # this is the last state in the sequence
@@ -117,7 +143,7 @@ validation_writer = tf.summary.FileWriter("log/" + timestamp + "-validation")
 # Only the last checkpoint is kept.
 if not os.path.exists("checkpoints"):
     os.mkdir("checkpoints")
-saver = tf.train.Saver(max_to_keep=1)
+saver = tf.train.Saver(max_to_keep=1000)
 
 # for display: init the progress bar
 DISPLAY_FREQ = 50
@@ -132,7 +158,7 @@ sess.run(init)
 step = 0
 
 # training loop
-for x, y_, epoch in txt.rnn_minibatch_sequencer(codetext, BATCHSIZE, SEQLEN, nb_epochs=1000):
+for x, y_, epoch in txt.rnn_minibatch_sequencer(codetext, BATCHSIZE, SEQLEN, nb_epochs=30):
 
     # train on one minibatch
     feed_dict = {X: x, Y_: y_, Hin: istate, lr: learning_rate, pkeep: dropout_pkeep, batchsize: BATCHSIZE}
@@ -178,7 +204,8 @@ for x, y_, epoch in txt.rnn_minibatch_sequencer(codetext, BATCHSIZE, SEQLEN, nb_
 
     # save a checkpoint (every 500 batches)
     if step // 10 % _50_BATCHES == 0:
-        saver.save(sess, 'checkpoints/rnn_train_' + timestamp, global_step=step)
+        saved_file = saver.save(sess, 'checkpoints/rnn_train_' + timestamp, global_step=step)
+        print("Saved file: " + saved_file)
 
     # display progress bar
     progress.step(reset=step % _50_BATCHES == 0)
