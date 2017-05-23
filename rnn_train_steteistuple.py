@@ -58,8 +58,8 @@ Xo = tf.one_hot(X, ALPHASIZE, 1.0, 0.0)                 # [ BATCHSIZE, SEQLEN, A
 Y_ = tf.placeholder(tf.uint8, [None, None], name='Y_')  # [ BATCHSIZE, SEQLEN ]
 Yo_ = tf.one_hot(Y_, ALPHASIZE, 1.0, 0.0)               # [ BATCHSIZE, SEQLEN, ALPHASIZE ]
 
-onecell = rnn.GRUCell(INTERNALSIZE)
-multicell = rnn.MultiRNNCell([onecell]*NLAYERS, state_is_tuple=True)
+cells = [rnn.GRUCell(INTERNALSIZE) for _ in range(NLAYERS)]
+multicell = rnn.MultiRNNCell(cells, state_is_tuple=True)
 
 # When using state_is_tuple=True, you must use multicell.zero_state
 # to create a tuple of  placeholders for the input states (one state per layer).
@@ -70,7 +70,6 @@ zerostate = multicell.zero_state(BATCHSIZE, dtype=tf.float32)
 Yr, H = tf.nn.dynamic_rnn(multicell, Xo, dtype=tf.float32, initial_state=zerostate)
 # Yr: [ BATCHSIZE, SEQLEN, INTERNALSIZE ]
 # H:  [ BATCHSIZE, INTERNALSIZE*NLAYERS ] # this is the last state in the sequence
-
 
 H = tf.identity(H, name='H')  # just to give it a name
 

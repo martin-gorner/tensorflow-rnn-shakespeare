@@ -38,16 +38,16 @@ tf.set_random_seed(0)
 #         training data (shakedir = "shakespeare/t*.txt" for example)
 #
 SEQLEN = 30
-BATCHSIZE = 100
+BATCHSIZE = 200
 ALPHASIZE = txt.ALPHASIZE
 INTERNALSIZE = 512
 NLAYERS = 3
 learning_rate = 0.001  # fixed learning rate
-dropout_pkeep = 1.0    # no dropout
+dropout_pkeep = 0.8    # some dropout
 
 # load data, either shakespeare, or the Python source of Tensorflow itself
 shakedir = "shakespeare/*.txt"
-# shakedir = "../tensorflow/**/*.py"
+#shakedir = "../tensorflow/**/*.py"
 codetext, valitext, bookranges = txt.read_data_files(shakedir, validation=True)
 
 # display some stats on the data
@@ -73,35 +73,18 @@ Hin = tf.placeholder(tf.float32, [None, INTERNALSIZE*NLAYERS], name='Hin')  # [ 
 # using a NLAYERS=3 layers of GRU cells, unrolled SEQLEN=30 times
 # dynamic_rnn infers SEQLEN from the size of the inputs Xo
 
-# How to properly apply dropout in RNNs is described
-# here: https://arxiv.org/pdf/1409.2329.pdf
-# and further developed here: https://arxiv.org/pdf/1512.05287.pdf
-# Dropout is always added in RNNs to inputs in all RNN layers as well as the output of the last layer,
-# which actually serves as the input dropout of the softmax layer so there is no need to add that explicitly.
-# The first article says that dropout should be applied to RNN inputs+output but not states. In this approach,
-# a random dropout mask is recomputed at every step of the unrolled sequence.
-# The second article says that dropout should be applied to RNN inputs+output as well as states,
-# using the same dropout mask for all the steps of the unrolled sequence.
-# In one dense neural network layer, applying dropout to outputs is equivalent to dropping columns in the weights
-# matrix W, while applying dropout to inputs is equivalent to dropping lines in W. It has the same effect in the end.
-
+# How to properly apply dropout in RNNs: see README.md
 cells = [rnn.GRUCell(INTERNALSIZE) for _ in range(NLAYERS)]
-multicell = rnn.MultiRNNCell(cells, state_is_tuple=False)
 
+# variational dropout implementation (does not work)
 #dropcells  = [rnn.DropoutWrapper(cells[0],  input_keep_prob=pkeep, output_keep_prob=1.0,   state_keep_prob=pkeep, variational_recurrent=True, input_size=ALPHASIZE, dtype=tf.float32)]
 #dropcells += [rnn.DropoutWrapper(cell,      input_keep_prob=pkeep, output_keep_prob=1.0,   state_keep_prob=pkeep, variational_recurrent=True, input_size=INTERNALSIZE, dtype=tf.float32) for cell in cells[1:-1]]
 #dropcells += [rnn.DropoutWrapper(cells[-1], input_keep_prob=pkeep, output_keep_prob=pkeep, state_keep_prob=pkeep, variational_recurrent=True, input_size=INTERNALSIZE, dtype=tf.float32)]
-#dropcells  = [rnn.DropoutWrapper(cells[0],  input_keep_prob=pkeep)]
-#dropcells += [rnn.DropoutWrapper(cell,      input_keep_prob=pkeep) for cell in cells[1:-1]]
-#dropcells += [rnn.DropoutWrapper(cells[-1], input_keep_prob=pkeep, output_keep_prob=pkeep)]
 #multicell = rnn.MultiRNNCell(dropcells, state_is_tuple=False)
-
-
-#cells = [rnn.GRUCell(INTERNALSIZE) for _ in range(NLAYERS)]
-#dropcells = [rnn.DropoutWrapper(cells[0], input_keep_prob=pkeep, state_keep_prob=pkeep, variational_recurrent=True, input_size=ALPHASIZE, dtype=tf.float32)]
-#dropcells += [rnn.DropoutWrapper(cell, input_keep_prob=pkeep, state_keep_prob=pkeep, variational_recurrent=True, input_size=INTERNALSIZE, dtype=tf.float32) for cell in cells[1:]]
-#multicell = rnn.MultiRNNCell(dropcells, state_is_tuple=False)
-#multicell = rnn.DropoutWrapper(multicell, output_keep_prob=pkeep, state_keep_prob=pkeep, variational_recurrent=True, input_size=ALPHASIZE, dtype=tf.float32)
+#"naive dropout" implementation
+dropcells = [rnn.DropoutWrapper(cell,input_keep_prob=pkeep) for cell in cells]
+multicell = rnn.MultiRNNCell(dropcells, state_is_tuple=False)
+multicell = rnn.DropoutWrapper(multicell, output_keep_prob=pkeep)  # dropout for the softmax layer
 
 Yr, H = tf.nn.dynamic_rnn(multicell, Xo, dtype=tf.float32, initial_state=Hin)
 # Yr: [ BATCHSIZE, SEQLEN, INTERNALSIZE ]
@@ -112,7 +95,7 @@ H = tf.identity(H, name='H')  # just to give it a name
 # Softmax layer implementation:
 # Flatten the first two dimension of the output [ BATCHSIZE, SEQLEN, ALPHASIZE ] => [ BATCHSIZE x SEQLEN, ALPHASIZE ]
 # then apply softmax readout layer. This way, the weights and biases are shared across unrolled time steps.
-# From the readout point of view, a value coming from a cell or a minibatch is the same thing
+# From the readout point of view, a value coming from a sequence time step or a minibatch item is the same thing.
 
 Yflat = tf.reshape(Yr, [-1, INTERNALSIZE])    # [ BATCHSIZE x SEQLEN, INTERNALSIZE ]
 Ylogits = layers.linear(Yflat, ALPHASIZE)     # [ BATCHSIZE x SEQLEN, ALPHASIZE ]
@@ -158,20 +141,18 @@ sess.run(init)
 step = 0
 
 # training loop
-for x, y_, epoch in txt.rnn_minibatch_sequencer(codetext, BATCHSIZE, SEQLEN, nb_epochs=30):
+for x, y_, epoch in txt.rnn_minibatch_sequencer(codetext, BATCHSIZE, SEQLEN, nb_epochs=10):
 
     # train on one minibatch
     feed_dict = {X: x, Y_: y_, Hin: istate, lr: learning_rate, pkeep: dropout_pkeep, batchsize: BATCHSIZE}
-    _, y, ostate, smm = sess.run([train_step, Y, H, summaries], feed_dict=feed_dict)
+    _, y, ostate = sess.run([train_step, Y, H], feed_dict=feed_dict)
 
-    # save training data for Tensorboard
-    summary_writer.add_summary(smm, step)
-
-    # display a visual validation of progress (every 50 batches)
+    # log training data for Tensorboard display a mini-batch of sequences (every 50 batches)
     if step % _50_BATCHES == 0:
         feed_dict = {X: x, Y_: y_, Hin: istate, pkeep: 1.0, batchsize: BATCHSIZE}  # no dropout for validation
-        y, l, bl, acc = sess.run([Y, seqloss, batchloss, accuracy], feed_dict=feed_dict)
+        y, l, bl, acc, smm = sess.run([Y, seqloss, batchloss, accuracy, summaries], feed_dict=feed_dict)
         txt.print_learning_learned_comparison(x, y, l, bookranges, bl, acc, epoch_size, step, epoch)
+        summary_writer.add_summary(smm, step)
 
     # run a validation step every 50 batches
     # The validation text should be a single sequence but that's too slow (1s per 1024 chars!),
@@ -221,15 +202,18 @@ for x, y_, epoch in txt.rnn_minibatch_sequencer(codetext, BATCHSIZE, SEQLEN, nb_
 # Tensorflow runs:
 # 1485434262
 #   trained on shakespeare/t*.txt only. Validation on 1K sequences
-#   validation loss goes up from step 5M
+#   validation loss goes up from step 5M (overfitting because of small dataset)
 # 1485436038
 #   trained on shakespeare/t*.txt only. Validation on 5K sequences
 #   On 5K sequences validation accuracy is slightly higher and loss slightly lower
 #   => sequence breaks do introduce inaccuracies but the effect is small
 # 1485437956
-#   Trained on shakespeare/*.txt only. Validation on 1K sequences
+#   Trained on shakespeare/*.txt. Validation on 1K sequences
 #   On this much larger dataset, validation loss still decreasing after 6 epochs (step 35M)
-# 1485440785
-#   Dropout = 0.5 - Trained on shakespeare/*.txt only. Validation on 1K sequences
-#   Much worse than before. Not very surprising since overfitting was not apparent
-#   on the validation curves before so there is nothing for dropout to fix.
+# 1495447371
+#   Trained on shakespeare/*.txt no dropout, 30 epochs
+#   Validation loss starts going up after 10 epochs (overfitting)
+# 1495440473
+#   Trained on shakespeare/*.txt "naive dropout" pkeep=0.8, 30 epochs
+#   Dropout brings the validation loss under control, preventing it from
+#   going up but the effect is small.

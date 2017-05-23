@@ -5,6 +5,8 @@ The presentation itself is available here:
 * [Video](https://t.co/cIePWmdxVE)
 * [Slides](https://goo.gl/jrd7AR)
 
+This sample has now been updated for Tensorflow 1.1. Please make sure you redownload the checkpoint files if you use rnn_play.py.
+
 ## Usage:
 
 ```
@@ -25,22 +27,22 @@ The training script **rnn_train.py** is set up to save training and validation
 data as "Tensorboard sumaries" in the "log" folder. They can be visualised with Tensorboard.
 In the screenshot below, you can see the RNN being trained on 6 epochs of Shakespeare.
 The training and valisation curves stay close together which means that overfitting is not a major issue here.
- You can try to add some dropout but it will not improve the situation much becasue it is already quite good.
+ You can try to add some dropout (pkeep=0.8 for example) but it will not improve the situation much becasue it is already quite good.
  
 ![Image](https://martin-gorner.github.io/tensorflow-rnn-shakespeare/tensorboard_screenshot.png)
 ```
 > python3 rnn_play.py
 ``` 
    
-The script **rnn_play.py** uses a trained snapshot to generate a new "Shakespeare" play.  
+The script **rnn_play.py** uses a trained checkpoint to generate a new "Shakespeare" play.  
 You can also generate new "Tensorflow Python" code. See comments in the file.
 
-Snapshot files can be downloaded from here:  
+Checkpoint files can be downloaded from here:  
    
-[Fully trained](https://drive.google.com/file/d/0B5njS_LX6IsDQ1laeDJ6dktSb3M/view?usp=sharing)
+[Fully trained](https://drive.google.com/file/d/0B5njS_LX6IsDc2lWTmtyanRpOHc/view?usp=sharing)
 on Shakespeare or Tensorflow Python source.   
    
-[Partially trained](https://drive.google.com/file/d/0B5njS_LX6IsDc2Y0X1VWc1pVTE0/view?usp=sharing)
+[Partially trained](https://drive.google.com/file/d/0B5njS_LX6IsDUlFsMkdhclNSazA/view?usp=sharing)
 to see how they make progress in training.
 
 ```
@@ -89,12 +91,37 @@ is no way to continue that one.) So there is no need to reset the state between
 epochs. The training will see at most one incoherent state per epoch, which is
 negligible.
 
-### 6) Any other gotcha's ?
+### 6) What is the proper way of applying dropout in an RNN ?
+Dropout in RNN theory is described here: https://arxiv.org/pdf/1409.2329.pdf<br/>
+and further developed here: https://arxiv.org/pdf/1512.05287.pdf<br/>
+
+The first thing to understand is that dropout can be applied to either the inputs of the outputs
+of a dense layer and this does not make much difference. If you look at the weights matrix of a
+dense neural network layer ([here](https://docs.google.com/presentation/d/1TVixw6ItiZ8igjp6U17tcgoFrLSaHWQmMOwjlgQY9co/pub?slide=id.g110257a6da_0_431))
+you realize that applying dropout to inputs is equivalent to dropping lines in the weights matrix
+whereas applyting dropout to outputs is equivalent to dropping columns in the weights matrix. You might
+use a different dropout ratio for one and the other if your columns are significantly larger than
+your lines but that is  the only difference.
+
+In RNNs it is customary to add dropout to inputs in all cell layers as well as the output of the last layer,
+which actually serves as the input dropout of the softmax layer so there is no need to add that explicitly.
+
+The first article says that dropout should be applied to RNN inputs+output but not states. In this approach,
+a random dropout mask is recomputed at every step of the unrolled sequence. This approach is called "naive dropout"
+and it's the one implemented in this sample.
+
+The second article says that dropout should be applied to RNN inputs+output as well as states,
+using the same dropout mask for all the steps of the unrolled sequence. This approach is called "variational dropout"
+and the primitives for implementing it have recently been added to Tensorflow.
+
+In the Shakespeare example, dropout (pkeep=0.8) can fix a slight tendency for overfitting visible between 10 and 20 training epochs.
+
+### 7) Any other gotcha's ?
 When saving and restoring the model, you must name your placeholders and name
 your nodes if you want to target them by name in the restored version (when you
 run a session.run([-nodes-], feed_dict={-placeholders-}) using the restored model.
 
-### 7) This is not serious. I want more math!
+### 8) This is not serious. I want more math!
 If you want to go deeper in the math, the one piece you are missing is the explanation
 of retropropagation, i.e. the algorithm used to compute gradients across multiple layers
 of neurons. Google it! It's useful if you want to re-implement gradient descent on your

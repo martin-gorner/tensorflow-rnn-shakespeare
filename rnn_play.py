@@ -24,36 +24,32 @@ INTERNALSIZE = 512
 
 # Data files can be downloaded from the following locations:
 #    - Fully trained on Shakespeare or Tensorflow Python source:
-#      https://drive.google.com/file/d/0B5njS_LX6IsDQ1laeDJ6dktSb3M/view?usp=sharing
+#      https://drive.google.com/file/d/0B5njS_LX6IsDc2lWTmtyanRpOHc/view?usp=sharing
 #    - Partially trained, to see how they make progress in training:
-#      https://drive.google.com/file/d/0B5njS_LX6IsDc2Y0X1VWc1pVTE0/view?usp=sharing
+#      https://drive.google.com/file/d/0B5njS_LX6IsDUlFsMkdhclNSazA/view?usp=sharing
 
-shakespeareC0 = "./rnn_test_minibatchseq_1477684737-0"      # random
-shakespeareC1 = "./rnn_test_minibatchseq_1477684737-150000"  # mostly lower case
-shakespeareC2 = "./rnn_test_minibatchseq_1477684737-300000"  # words, paragraphs
-shakespeareC3 = "./rnn_test_minibatchseq_1477684737-450000"  # structure of a play
-shakespeareC4 = "./rnn_test_minibatchseq_1477684737-600000"  # better structure of a play, 3-letter words in correct English
-shakespeareC5 = "./rnn_test_minibatchseq_1477684737-900000"  # character names wrong but in correct place, correct 4-letter words start appearing
-shakespeareC6 = "./rnn_test_minibatchseq_1477684737-5100000"  # good names, even when invented (ex: SIR NATHANIS LORD OF SYRACUSE), correct 6-8 letter words
-shakespeareC7 = "./rnn_test_minibatchseq_1477684737-10083000"  # ACT V SCENE IV, [Re-enter KING JOHN with MARDIAN] but some still badly closed, DON ADRIANO DRAGHAMONE <- invented! most words correct
-shakespeareC8 = "./rnn_test_minibatchseq_1477684737-20049000"  # most scenic indications correct: [Stabs aside] [Enter FERDINAND] [Dies] [Exit ROSALIND] [To COMINIUS with me]
-shakespeareC9 = "./rnn_test_minibatchseq_1477684737-47997000"  # [Enter CYMBELINE and LUCETTA] [Enter PRINCE HENRY and Patroclus] [Exeunt all but two Englishman] [Enter PRINCE HENRY, and Attendants]
-shakespeareB10 = "./rnn_test_minibatchseq_1477670023-174939000"  # [Re-enter LAUNIS'S] [Enter MARK ANTONY and TREBIAGO, DIONA, and CAPULET and Lords, and Soldiers]
+shakespeareC0 = "checkpoints/rnn_train_1495455686-0"      # random
+shakespeareC1 = "checkpoints/rnn_train_1495455686-150000"  # lower case gibberish
+shakespeareC2 = "checkpoints/rnn_train_1495455686-300000"  # words, paragraphs
+shakespeareC3 = "checkpoints/rnn_train_1495455686-450000"  # structure of a play, unintelligible words
+shakespeareC4 = "checkpoints/rnn_train_1495447371-15000000"  # better structure of a play, character names (not very good), 4-letter words in correct English
+shakespeareC5 = "checkpoints/rnn_train_1495447371-45000000"  # good names, even when invented (ex: SIR NATHANIS LORD OF SYRACUSE), correct 6-8 letter words
+shakespeareB10 = "checkpoints/rnn_train_1495440473-102000000" # ACT V SCENE IV, [Re-enter KING JOHN with MARDIAN], DON ADRIANO DRAGHAMONE <- invented!
+# most scene directions correct: [Enter FERDINAND] [Dies] [Exit ROSALIND] [To COMINIUS with me] [Enter PRINCE HENRY, and Attendants], correct English.
 
-pythonA0 = "./rnn_test_minibatchseq_1477832845-150000"  # gibberish
-pythonA1 = "./rnn_test_minibatchseq_1477832845-300000"  # some == and (
-pythonA2 = "./rnn_test_minibatchseq_1477832845-1050000"  # correct function calls with parameters and ()
-pythonA3 = "./rnn_test_minibatchseq_1477832845-4050000"  # looks like Tensorflow Python, nested () and [] ok
-pythonB10 = "./rnn_test_minibatchseq_1477834023-138609000"  # can even recite the Apache license
+pythonA0 = "checkpoints/rnn_train_1495458538-300000"  # gibberish
+pythonA1 = "checkpoints/rnn_train_1495458538-1200000"  # some function calls with parameters and ()
+pythonA2 = "checkpoints/rnn_train_1495458538-10200000"  # starts looking Tensorflow Python, nested () and [] not perfect yet
+pythonB10 = "checkpoints/rnn_train_1495458538-201600000"  # can even recite the Apache license
 
-# use topn=10 for all but the last which works with topn=2 for Shakespeare and topn=3 for Python
+# use topn=10 for all but the last one which works with topn=2 for Shakespeare and topn=3 for Python
 author = shakespeareB10
 
 ncnt = 0
 with tf.Session() as sess:
-    new_saver = tf.train.import_meta_graph('./rnn_test_minibatchseq_1477670023-174939000.meta')
+    new_saver = tf.train.import_meta_graph('checkpoints/rnn_train_1495455686-0.meta')
     new_saver.restore(sess, author)
-    x = my_txtutils.convert_from_alphabet(ord("K"))
+    x = my_txtutils.convert_from_alphabet(ord("L"))
     x = np.array([[x]])  # shape [BATCHSIZE, SEQLEN] with BATCHSIZE=1 and SEQLEN=1
 
     # initial values
@@ -66,7 +62,7 @@ with tf.Session() as sess:
         # is more credible and more "english". If topn is not set, it defaults to the full
         # distribution (ALPHASIZE)
 
-        # Recommended: topn = 10 for intermediate checkpoints, topn=2 for fully trained checkpoints
+        # Recommended: topn = 10 for intermediate checkpoints, topn=2 or 3 for fully trained checkpoints
 
         c = my_txtutils.sample_from_probabilities(yo, topn=2)
         y = np.array([[c]])  # shape [BATCHSIZE, SEQLEN] with BATCHSIZE=1 and SEQLEN=1
