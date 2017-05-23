@@ -75,13 +75,7 @@ Hin = tf.placeholder(tf.float32, [None, INTERNALSIZE*NLAYERS], name='Hin')  # [ 
 
 # How to properly apply dropout in RNNs: see README.md
 cells = [rnn.GRUCell(INTERNALSIZE) for _ in range(NLAYERS)]
-
-# variational dropout implementation (does not work)
-#dropcells  = [rnn.DropoutWrapper(cells[0],  input_keep_prob=pkeep, output_keep_prob=1.0,   state_keep_prob=pkeep, variational_recurrent=True, input_size=ALPHASIZE, dtype=tf.float32)]
-#dropcells += [rnn.DropoutWrapper(cell,      input_keep_prob=pkeep, output_keep_prob=1.0,   state_keep_prob=pkeep, variational_recurrent=True, input_size=INTERNALSIZE, dtype=tf.float32) for cell in cells[1:-1]]
-#dropcells += [rnn.DropoutWrapper(cells[-1], input_keep_prob=pkeep, output_keep_prob=pkeep, state_keep_prob=pkeep, variational_recurrent=True, input_size=INTERNALSIZE, dtype=tf.float32)]
-#multicell = rnn.MultiRNNCell(dropcells, state_is_tuple=False)
-#"naive dropout" implementation
+# "naive dropout" implementation
 dropcells = [rnn.DropoutWrapper(cell,input_keep_prob=pkeep) for cell in cells]
 multicell = rnn.MultiRNNCell(dropcells, state_is_tuple=False)
 multicell = rnn.DropoutWrapper(multicell, output_keep_prob=pkeep)  # dropout for the softmax layer
