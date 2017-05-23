@@ -77,7 +77,7 @@ distances of 100 characters or more. But you will have to teach it this trick
 using examples of 30 or less characters.
 
 ###  4) So, now that I have unrolled the RNN cell, state passing is taken care of. I just have to call my train_step in a loop right ?
-Not quite, you sill need to save the last state of the unrolled sequence of
+Not quite, you still need to save the last state of the unrolled sequence of
 cells, and feed it as the input state for the next minibatch in the traing loop.
 
 ### 5) What is the proper way of batching training sequences ?
