@@ -24,9 +24,9 @@ a tuple is a bit more cumbersome.
 > tensorboard --logdir=log
 ```
 The training script **rnn_train.py** is set up to save training and validation
-data as "Tensorboard sumaries" in the "log" folder. They can be visualised with Tensorboard.
+data as "Tensorboard summaries" in the "log" folder. They can be visualised with Tensorboard.
 In the screenshot below, you can see the RNN being trained on 6 epochs of Shakespeare.
-The training and valisation curves stay close together which means that overfitting is not a major issue here.
+The training and validation curves stay close together which means that overfitting is not a major issue here.
  You can try to add some dropout (pkeep=0.8 for example) but it will not improve the situation much becasue it is already quite good.
  
 ![Image](https://martin-gorner.github.io/tensorflow-rnn-shakespeare/tensorboard_screenshot.png)
@@ -58,7 +58,7 @@ The reduction of dimensions is best performed by a learned layer.
 
 ###  Why does it not work with just one cell? The RNN cell state should still enable state transitions, even without unrolling ?
 Yes, a cell is a state machine and can represent state transitions like
-the fact that an there is a pending open parenthesis and that it will need
+the fact that there is a pending open parenthesis and that it will need
 to be closed at some point. The problem is to make the network learn those
 transitions. The learning algorithm only modifies weights and biases. The input
 state of the cell cannot be modified by it: that is a big problem if the wrong
@@ -78,7 +78,7 @@ using examples of 30 or less characters.
 
 ###  4) So, now that I have unrolled the RNN cell, state passing is taken care of. I just have to call my train_step in a loop right ?
 Not quite, you still need to save the last state of the unrolled sequence of
-cells, and feed it as the input state for the next minibatch in the traing loop.
+cells, and feed it as the input state for the next minibatch in the training loop.
 
 ### 5) What is the proper way of batching training sequences ?
 All the character sequences in the first batch, must continue in the second
@@ -99,9 +99,9 @@ The first thing to understand is that dropout can be applied to either the input
 of a dense layer and this does not make much difference. If you look at the weights matrix of a
 dense neural network layer ([here](https://docs.google.com/presentation/d/1TVixw6ItiZ8igjp6U17tcgoFrLSaHWQmMOwjlgQY9co/pub?slide=id.g110257a6da_0_431))
 you realize that applying dropout to inputs is equivalent to dropping lines in the weights matrix
-whereas applyting dropout to outputs is equivalent to dropping columns in the weights matrix. You might
+whereas applying dropout to outputs is equivalent to dropping columns in the weights matrix. You might
 use a different dropout ratio for one and the other if your columns are significantly larger than
-your lines but that is  the only difference.
+your lines but that is the only difference.
 
 In RNNs it is customary to add dropout to inputs in all cell layers as well as the output of the last layer,
 which actually serves as the input dropout of the softmax layer so there is no need to add that explicitly.
